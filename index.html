@@ -1012,6 +1012,7 @@ function renderUserCard(uid, data) {
         <button onclick="adminGrantPremium('${uid}', 7)" style="flex:1;min-width:90px;background:transparent;border:1px solid var(--gold);border-radius:6px;color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">+7 DIAS</button>
         <button onclick="adminRevokePremium('${uid}')" style="flex:1;min-width:90px;background:transparent;border:1px solid var(--red);border-radius:6px;color:var(--red);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">REVOGAR</button>
         <button onclick="adminResetUsage('${uid}')" style="flex:1;min-width:90px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">ZERAR USO</button>
+        <button onclick="adminDeleteUser('${uid}', '${data.email}')" style="flex:1;min-width:90px;background:#3a0000;border:1px solid var(--red);border-radius:6px;color:var(--red);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">🗑️ DELETAR</button>
       </div>
     </div>`;
 }
@@ -1162,6 +1163,26 @@ async function adminResetUsage(uid) {
   }
 }
 
+  async function adminDeleteUser(uid, email) {
+  if (!isAdmin()) return;
+  if (!confirm(`Deletar permanentemente o usuário ${email}? Esta ação não pode ser desfeita.`)) return;
+  try {
+    const res = await fetch('https://us-central1-troca-figurinhas-copa2026.cloudfunctions.net/deleteUser', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, adminEmail: window.currentUser.email })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('Usuário deletado com sucesso!');
+      adminListUsers();
+    } else {
+      alert('Erro: ' + data.error);
+    }
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
 // Load user data from Firestore
 window.loadUserData = async function(user) {
   try {
