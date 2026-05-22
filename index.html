@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -36,6 +36,7 @@
     getRedirectResult,
     signOut,
     onAuthStateChanged,
+    sendEmailVerification,
     doc,
     getDoc,
     setDoc,
@@ -51,7 +52,16 @@
   // Init auth state listener
   onAuthStateChanged(auth, async (user) => {
     document.getElementById('loadingScreen').style.display = 'none';
-    if (user) {
+   if (user) {
+      // Bloquear e-mail/senha não verificado (Google já vem verificado)
+      const isGoogle = user.providerData?.some(p => p.providerId === 'google.com');
+      if (!isGoogle && !user.emailVerified) {
+        await window.fbFunctions.signOut(window.fbAuth);
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('loginError').textContent = '⚠️ Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.';
+        document.getElementById('loginError').style.display = 'block';
+        return;
+      }
       window.currentUser = user;
       try {
         await window.loadUserData(user);
@@ -913,7 +923,13 @@ async function doEmailSignup() {
   if (!email || !pass) { errEl.textContent = 'Preencha e-mail e senha.'; errEl.style.display = 'block'; return; }
   if (pass.length < 6) { errEl.textContent = 'A senha deve ter pelo menos 6 caracteres.'; errEl.style.display = 'block'; return; }
   try {
-    await window.fbFunctions.createUserWithEmailAndPassword(window.fbAuth, email, pass);
+    const cred = await window.fbFunctions.createUserWithEmailAndPassword(window.fbAuth, email, pass);
+    await window.fbFunctions.sendEmailVerification(cred.user);
+    document.getElementById('signupError').style.color = 'var(--green)';
+    document.getElementById('signupError').textContent = '✅ Conta criada! Verifique seu e-mail antes de entrar.';
+    document.getElementById('signupError').style.display = 'block';
+    await window.fbFunctions.signOut(window.fbAuth);
+    return;
   } catch(e) {
     if (e.code === 'auth/email-already-in-use') {
       errEl.textContent = 'Este e-mail já está cadastrado.';
