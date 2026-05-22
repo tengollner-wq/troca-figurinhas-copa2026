@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Troca Figurinhas Copa 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBpDJ-fbDobJ87UJ1ybMS1LR5zAcI5kDVs",
+    authDomain: "troca-figurinhas-copa2026.firebaseapp.com",
+    projectId: "troca-figurinhas-copa2026",
+    storageBucket: "troca-figurinhas-copa2026.firebasestorage.app",
+    messagingSenderId: "686998018826",
+    appId: "1:686998018826:web:4ea20e5aa70f96697cf8f3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const googleProvider = new GoogleAuthProvider();
+
+  // Expose to global scope
+  window.fbAuth = auth;
+  window.fbDb = db;
+  window.fbGoogleProvider = googleProvider;
+  window.fbFunctions = {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
+    signOut,
+    onAuthStateChanged,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    GoogleAuthProvider
+  };
+
+  // Check for redirect result on page load
+  getRedirectResult(auth).catch((error) => {
+    console.error("Redirect error:", error);
+  });
+
+  // Init auth state listener
+  onAuthStateChanged(auth, async (user) => {
+    document.getElementById('loadingScreen').style.display = 'none';
+    if (user) {
+      window.currentUser = user;
+      try {
+        await window.loadUserData(user);
+      } catch(e) {
+        console.error('loadUserData failed:', e);
+        window.isPremium = false;
+        window.weeklyUsage = { count: 0, start: Date.now() };
+      }
+      if (typeof window.startApp === 'function') {
+        window.startApp();
+      } else {
+        console.error('startApp not yet defined, retrying...');
+        setTimeout(() => { if (window.startApp) window.startApp(); }, 100);
+      }
+    } else {
+      window.currentUser = null;
+      window.isPremium = false;
+      document.getElementById('appScreen').style.display = 'none';
+      document.getElementById('adminScreen').style.display = 'none';
+      document.getElementById('plansScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
+  });
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00c853;
+    --green-dark: #007c32;
+    --green-dim: #00c85322;
+    --bg: #0a0f0a;
+    --bg2: #111711;
+    --bg3: #182018;
+    --border: #1e2e1e;
+    --text: #d4e8d4;
+    --muted: #5a745a;
+    --gold: #ffd600;
+    --blue: #40c4ff;
+    --red: #ff5252;
+    --premium: #ffd600;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* LOGIN SCREEN */
+  #loginScreen {
+    display: none; min-height: 100vh; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 0%, #0d2e0d 0%, var(--bg) 70%);
+    padding: 40px 20px;
+  }
+  .login-box { max-width: 420px; width: 100%; text-align: center; }
+  .login-ball {
+    font-size: 72px; line-height: 1; margin-bottom: 8px;
+    animation: bounce 1.5s ease-in-out infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .login-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 10vw, 72px);
+    color: var(--green); line-height: 1; letter-spacing: 3px; margin-bottom: 4px;
+  }
+  .login-logo span { color: var(--gold); }
+  .login-sub { font-size: 12px; color: var(--muted); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 32px; }
+  .login-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 16px; }
+  .login-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--text); letter-spacing: 2px; margin-bottom: 6px; }
+  .login-desc { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+  .btn-login { width: 100%; padding: 16px; background: var(--green); color: #000; border: none; border-radius: 10px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; }
+  .btn-login:hover { background: #00e676; transform: translateY(-2px); }
+  .login-features { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-top: 24px; }
+  .login-feature { font-size: 12px; color: var(--muted); text-align: center; }
+  .login-feature-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+
+  /* PIX QR */
+  .pix-qr-wrap { display: flex; justify-content: center; margin: 12px 0; }
+  .pix-qr-wrap canvas, .pix-qr-wrap img { border-radius: 8px; border: 4px solid #fff; }
+
+  /* LOADING */
+  #loadingScreen {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 0%, #0d2e0d 0%, var(--bg) 70%);
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TELA DE REGRAS */
+  #rulesScreen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; background: radial-gradient(ellipse at 50% 0%, #0d2e0d 0%, var(--bg) 70%); }
+  .rules-box { max-width: 680px; width: 100%; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 10vw, 80px); color: var(--green); line-height: 1; letter-spacing: 2px; text-align: center; margin-bottom: 4px; }
+  .logo span { color: var(--gold); }
+  .subtitle { text-align: center; color: var(--muted); font-size: 13px; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 40px; }
+  .rules-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-bottom: 16px; }
+  .rules-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--gold); letter-spacing: 2px; margin-bottom: 20px; }
+  .rule-item { display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start; }
+  .rule-num { background: var(--green-dark); color: var(--green); font-family: 'Bebas Neue', sans-serif; font-size: 18px; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .rule-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+  .rule-text code { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 12px; color: var(--green); font-family: 'Courier New', monospace; }
+  .btn-start { width: 100%; padding: 18px; background: var(--green); color: #000; border: none; border-radius: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; }
+  .btn-start:hover { background: #00e676; transform: translateY(-2px); }
+
+  /* PLANOS */
+  #plansScreen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; background: radial-gradient(ellipse at 50% 0%, #0d2e0d 0%, var(--bg) 70%); }
+  .plans-box { max-width: 700px; width: 100%; }
+  .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media(max-width:600px) { .plans-grid { grid-template-columns: 1fr; } }
+  .plan-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 28px; text-align: center; position: relative; }
+  .plan-card.premium { border-color: var(--gold); background: #1a1500; }
+  .plan-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 2px; padding: 3px 14px; border-radius: 20px; }
+  .plan-name { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 8px; }
+  .plan-card.free .plan-name { color: var(--green); }
+  .plan-card.premium .plan-name { color: var(--gold); }
+  .plan-price { font-family: 'Bebas Neue', sans-serif; font-size: 42px; line-height: 1; margin-bottom: 4px; }
+  .plan-card.free .plan-price { color: var(--text); }
+  .plan-card.premium .plan-price { color: var(--gold); }
+  .plan-period { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+  .plan-feature { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .plan-feature strong { color: var(--text); }
+  .btn-plan-free { width: 100%; padding: 14px; background: transparent; border: 1px solid var(--green); border-radius: 10px; color: var(--green); font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; margin-top: 16px; }
+  .btn-plan-free:hover { background: var(--green-dim); }
+  .btn-plan-premium { width: 100%; padding: 14px; background: var(--gold); border: none; border-radius: 10px; color: #000; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; margin-top: 16px; }
+  .btn-plan-premium:hover { background: #ffe033; }
+
+  /* MODAL PAGAMENTO */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: #000a; z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--gold); border-radius: 16px; padding: 32px; max-width: 480px; width: 100%; }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; }
+  .modal-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .payment-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .payment-option { display: block; }
+  .payment-option input[type="radio"] { display: none; }
+  .payment-label {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all 0.2s;
+  }
+  .payment-option input:checked + .payment-label { border-color: var(--gold); background: #1a150033; }
+  .payment-icon { font-size: 24px; }
+  .payment-info { flex: 1; }
+  .payment-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .payment-desc { font-size: 12px; color: var(--muted); }
+  .btn-pay { width: 100%; padding: 16px; background: var(--gold); border: none; border-radius: 10px; color: #000; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; }
+  .btn-pay:hover { background: #ffe033; }
+  .btn-modal-close { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
+  .btn-modal-close:hover { border-color: var(--red); color: var(--red); }
+
+  /* PIX MODAL */
+  .pix-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; text-align: center; }
+  .pix-key { font-family: 'Courier New', monospace; font-size: 13px; color: var(--green); word-break: break-all; margin: 8px 0; }
+  .pix-instructions { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* APP HEADER */
+  #appScreen { display: none; }
+  .app-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+  .app-logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--green); letter-spacing: 2px; }
+  .app-logo span { color: var(--gold); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .user-info { font-size: 12px; color: var(--muted); text-align: right; }
+  .user-email { font-size: 13px; color: var(--text); }
+  .plan-pill { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; }
+  .plan-pill.free { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .plan-pill.premium { background: #1a1500; color: var(--gold); border: 1px solid var(--gold); }
+  .btn-logout { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
+  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+  /* LIMITE DIÁRIO */
+  .limit-banner { background: #1a1500; border: 1px solid var(--gold); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .limit-text { font-size: 13px; color: var(--gold); }
+  .btn-upgrade { background: var(--gold); border: none; border-radius: 8px; color: #000; font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1px; padding: 8px 18px; cursor: pointer; transition: all 0.2s; }
+  .btn-upgrade:hover { background: #ffe033; }
+
+  /* APP BODY */
+  .app-body { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+  .section-label { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; }
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 32px; max-width: 700px; }
+  .mode-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; text-align: left; transition: all 0.2s; color: var(--text); }
+  .mode-btn:hover { border-color: var(--green); }
+  .mode-btn.active { border-color: var(--green); background: var(--green-dim); }
+  .mode-btn .mode-num { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green); line-height: 1; margin-bottom: 4px; }
+  .mode-btn.active .mode-num { color: var(--gold); }
+  .mode-btn .mode-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .mode-btn.active .mode-desc { color: var(--text); }
+
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: var(--green); margin-bottom: 14px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width: 600px) { .field-row { grid-template-columns: 1fr; } .mode-grid { grid-template-columns: 1fr; } }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Courier New', monospace; font-size: 11px; padding: 10px; resize: vertical; min-height: 100px; outline: none; transition: border-color 0.2s; width: 100%; }
+  textarea:focus { border-color: var(--green); }
+  input[type="text"] { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 12px; outline: none; width: 100%; transition: border-color 0.2s; }
+  input[type="text"]:focus { border-color: var(--green); }
+
+  .person-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+  .person-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .person-badge { font-family: 'Bebas Neue', sans-serif; font-size: 22px; background: var(--green-dark); color: var(--green); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .btn-add { background: transparent; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 14px; cursor: pointer; width: 100%; transition: all 0.2s; margin-bottom: 24px; }
+  .btn-add:hover { border-color: var(--green); color: var(--green); }
+
+  .btn-analyze { width: 100%; padding: 18px; background: var(--green); color: #000; border: none; border-radius: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; margin-bottom: 32px; }
+  .btn-analyze:hover { background: #00e676; }
+  .btn-analyze:disabled { background: var(--bg3); color: var(--muted); cursor: not-allowed; }
+
+  /* RESULTADOS */
+  #results { display: none; }
+  .results-header { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--gold); letter-spacing: 3px; margin-bottom: 20px; text-align: center; }
+  .result-pair { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .pair-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .pair-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green); letter-spacing: 2px; }
+  .pair-count { background: var(--green-dim); border: 1px solid var(--green); border-radius: 20px; padding: 4px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--green); letter-spacing: 1px; }
+  .trade-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
+  .trade-side-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .stickers-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sticker-tag { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--text); }
+  .sticker-tag.give { border-color: #ff525255; color: var(--red); background: #ff525211; }
+  .sticker-tag.get { border-color: #00c85355; color: var(--green); background: var(--green-dim); }
+  .trade-arrow { color: var(--gold); font-size: 22px; margin-top: 24px; text-align: center; }
+  .no-trade { color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 12px; }
+  .btn-copy { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 8px 16px; cursor: pointer; margin-top: 14px; transition: all 0.2s; }
+  .btn-copy:hover { border-color: var(--green); color: var(--green); }
+  .btn-reset { width: 100%; padding: 14px; background: transparent; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
+  .btn-reset:hover { border-color: var(--red); color: var(--red); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .tag-extras { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .extras-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;">Carregando...</div>
+</div>
+
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;">
+  <div class="login-box">
+    <div class="login-ball">⚽</div>
+    <div class="login-logo">TROCA<span>⚽</span>FIGURINHAS</div>
+    <div class="login-sub">Copa do Mundo 2026</div>
+
+    <div style="display:flex;gap:0;margin-bottom:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <button id="tabEntrar" onclick="switchTab('entrar')" style="flex:1;padding:12px;background:var(--green);color:#000;border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">ENTRAR</button>
+      <button id="tabCadastrar" onclick="switchTab('cadastrar')" style="flex:1;padding:12px;background:transparent;color:var(--muted);border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">CADASTRAR</button>
+    </div>
+
+    <button onclick="doGoogleLogin()" style="width:100%;padding:14px;background:#fff;color:#333;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continuar com Google
+    </button>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <span style="font-size:12px;color:var(--muted);">ou</span>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+
+    <div id="formEntrar" class="login-card" style="margin-bottom:12px;">
+      <input type="email" id="loginEmail" placeholder="Seu e-mail" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <input type="password" id="loginPassword" placeholder="Senha" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;box-sizing:border-box;">
+      <div id="loginError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none;"></div>
+      <button class="btn-login" onclick="doEmailLogin()">🔐 ENTRAR</button>
+    </div>
+
+    <div id="formCadastrar" class="login-card" style="margin-bottom:12px;display:none;">
+      <input type="email" id="signupEmail" placeholder="Seu e-mail" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <input type="password" id="signupPassword" placeholder="Senha (mín. 6 caracteres)" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;box-sizing:border-box;">
+      <div id="signupError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none;"></div>
+      <button class="btn-login" style="background:var(--gold);color:#000;" onclick="doEmailSignup()">✨ CRIAR CONTA</button>
+    </div>
+
+    <div class="login-features">
+      <div class="login-feature"><span class="login-feature-icon">🆓</span>1 comparação<br>por semana grátis</div>
+      <div class="login-feature"><span class="login-feature-icon">👥</span>Até 5 pessoas<br>por análise</div>
+      <div class="login-feature"><span class="login-feature-icon">⭐</span>Premium<br>R$ 4,90/mês</div>
+      <div class="login-feature"><span class="login-feature-icon">📋</span>Mensagem<br>pronta p/ WhatsApp</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ADMIN SCREEN -->
+<div id="adminScreen" style="display:none;min-height:100vh;background:var(--bg);padding:24px 20px;">
+  <div style="max-width:1000px;margin:0 auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);letter-spacing:3px;">🛠️ PAINEL ADMIN</div>
+        <div style="font-size:12px;color:var(--muted);">Gerenciar usuários e assinaturas Premium</div>
+      </div>
+      <button onclick="closeAdmin()" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:8px 16px;cursor:pointer;">← VOLTAR AO APP</button>
+    </div>
+
+    <!-- ESTATÍSTICAS -->
+    <div id="adminStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
+      <div class="card" style="text-align:center;padding:16px;margin:0;">
+        <div id="statTotal" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--green);line-height:1;">—</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;">Total usuários</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px;margin:0;">
+        <div id="statPremium" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);line-height:1;">—</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;">Premium ativos</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px;margin:0;">
+        <div id="statFree" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--text);line-height:1;">—</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;">Gratuitos</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px;margin:0;">
+        <div id="statNew7d" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;">Novos (7 dias)</div>
+      </div>
+    </div>
+
+    <!-- ABAS -->
+    <div style="display:flex;gap:0;margin-bottom:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <button id="adminTabList" onclick="switchAdminTab('list')" style="flex:1;padding:12px;background:var(--green);color:#000;border:none;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;">📋 LISTAR TODOS</button>
+      <button id="adminTabSearch" onclick="switchAdminTab('search')" style="flex:1;padding:12px;background:transparent;color:var(--muted);border:none;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;">🔍 BUSCAR</button>
+    </div>
+
+    <!-- LISTAR -->
+    <div id="adminListView">
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <div style="font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Filtrar:</div>
+          <select id="adminFilter" onchange="adminListUsers()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 10px;outline:none;cursor:pointer;">
+            <option value="all">Todos</option>
+            <option value="premium">Premium ativos</option>
+            <option value="free">Gratuitos</option>
+            <option value="expired">Premium expirado</option>
+          </select>
+          <select id="adminSort" onchange="adminListUsers()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 10px;outline:none;cursor:pointer;">
+            <option value="newest">Mais recentes</option>
+            <option value="oldest">Mais antigos</option>
+            <option value="email">E-mail (A-Z)</option>
+            <option value="usage">Mais ativos</option>
+          </select>
+          <button onclick="adminListUsers()" style="margin-left:auto;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;padding:8px 16px;cursor:pointer;">🔄 ATUALIZAR</button>
+        </div>
+      </div>
+      <div id="adminListResults"></div>
+    </div>
+
+    <!-- BUSCAR -->
+    <div id="adminSearchView" style="display:none;">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">🔍 Buscar usuário por e-mail</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="email" id="adminSearchEmail" placeholder="E-mail do usuário" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;">
+          <button onclick="adminSearchUser()" style="background:var(--green);border:none;border-radius:8px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:10px 20px;cursor:pointer;">BUSCAR</button>
+        </div>
+      </div>
+      <div id="adminResults"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TELA DE REGRAS -->
+<div id="rulesScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;">
+  <div class="rules-box">
+    <div class="logo">TROCA<span>⚽</span>FIGURINHAS</div>
+    <div class="subtitle">Copa do Mundo 2026</div>
+    <div class="rules-card">
+      <div class="rules-title">📋 Como usar</div>
+      <div class="rule-item"><div class="rule-num">1</div><div class="rule-text">Cole suas listas nos campos indicados. Faltantes e repetidas podem vir juntos ou separados — o sistema identifica automaticamente.</div></div>
+      <div class="rule-item"><div class="rule-num">2</div><div class="rule-text">Formatos aceitos: <code>BRA: 1, 2, 3</code> &nbsp;|&nbsp; <code>BRA 🇧🇷: 1, 2, 3</code> &nbsp;|&nbsp; <code>BRA1, BRA2</code></div></div>
+      <div class="rule-item"><div class="rule-num">3</div><div class="rule-text">Trocas <strong>não precisam ser do mesmo país</strong>. O que importa é a quantidade: 5 por 5, independente do grupo.</div></div>
+      <div class="rule-item"><div class="rule-num">4</div><div class="rule-text">Adicione até <strong>5 pessoas</strong> para comparar simultaneamente.</div></div>
+      <div class="rule-item"><div class="rule-num">5</div><div class="rule-text">O resultado mostra trocas <strong>equilibradas por par</strong>. Use o botão Copiar para enviar a proposta pelo WhatsApp.</div></div>
+      <div class="rule-item"><div class="rule-num">6</div><div class="rule-text">Plano gratuito: <strong>1 comparação por semana</strong>. Assine o Premium para comparações ilimitadas por R$ 4,90/mês.</div></div>
+    </div>
+    <button class="btn-start" onclick="showPlans()">⚽ COMEÇAR</button>
+  </div>
+</div>
+
+<!-- TELA DE PLANOS -->
+<div id="plansScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;">
+  <div class="plans-box">
+    <div class="logo" style="font-size:clamp(36px,8vw,60px);margin-bottom:4px;">ESCOLHA SEU PLANO</div>
+    <div class="subtitle" style="margin-bottom:32px;">Copa do Mundo 2026</div>
+    <div class="plans-grid">
+      <div class="plan-card free">
+        <div class="plan-name">GRATUITO</div>
+        <div class="plan-price">R$ 0</div>
+        <div class="plan-period">para sempre</div>
+        <div class="plan-feature"><strong>1 comparação</strong> por semana</div>
+        <div class="plan-feature">Até 5 pessoas por análise</div>
+        <div class="plan-feature">Todos os modos</div>
+        <button class="btn-plan-free" onclick="chooseFree()">CONTINUAR GRÁTIS</button>
+      </div>
+      <div class="plan-card premium">
+        <div class="plan-badge">⭐ PREMIUM</div>
+        <div class="plan-name">PREMIUM</div>
+        <div class="plan-price">R$ 4,90</div>
+        <div class="plan-period">por mês</div>
+        <div class="plan-feature"><strong>Comparações ilimitadas</strong></div>
+        <div class="plan-feature">Até 5 pessoas por análise</div>
+        <div class="plan-feature">Todos os modos</div>
+        <button class="btn-plan-premium" onclick="openPaymentThenSignup()">ASSINAR AGORA</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+      <button onclick="chooseFree()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">Continuar com o plano gratuito</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAMENTO -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal" id="paymentModalContent">
+    <div class="modal-title">💎 ASSINAR PREMIUM</div>
+    <div class="modal-subtitle">R$ 4,90/mês — comparações ilimitadas</div>
+
+    <div id="paymentStep1">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;letter-spacing:1px;text-transform:uppercase;">Tipo de assinatura</div>
+      <div class="payment-options" id="subscriptionOptions">
+        <label class="payment-option">
+          <input type="radio" name="subtype" value="recurring" checked>
+          <div class="payment-label">
+            <div class="payment-icon">🔄</div>
+            <div class="payment-info">
+              <div class="payment-name">Com recorrência</div>
+              <div class="payment-desc">Débito automático todo mês. Cancele quando quiser.</div>
+            </div>
+          </div>
+        </label>
+        <label class="payment-option">
+          <input type="radio" name="subtype" value="onetime">
+          <div class="payment-label">
+            <div class="payment-icon">📅</div>
+            <div class="payment-info">
+              <div class="payment-name">Sem recorrência</div>
+              <div class="payment-desc">Paga uma vez, acesso por 30 dias.</div>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;letter-spacing:1px;text-transform:uppercase;">Forma de pagamento</div>
+      <div class="payment-options" id="paymentOptions">
+        <label class="payment-option">
+          <input type="radio" name="paymethod" value="mp" checked>
+          <div class="payment-label">
+            <div class="payment-icon">💳</div>
+            <div class="payment-info">
+              <div class="payment-name">Mercado Pago</div>
+              <div class="payment-desc">Cartão, boleto ou saldo MP</div>
+            </div>
+          </div>
+        </label>
+        <label class="payment-option">
+          <input type="radio" name="paymethod" value="pix">
+          <div class="payment-label">
+            <div class="payment-icon">⚡</div>
+            <div class="payment-info">
+              <div class="payment-name">PIX</div>
+              <div class="payment-desc">Aprovação imediata</div>
+            </div>
+          </div>
+        </label>
+      </div>
+      <button class="btn-pay" onclick="processPayment()">PROSSEGUIR →</button>
+      <button class="btn-modal-close" onclick="closePaymentModal()">Cancelar</button>
+    </div>
+
+    <div id="paymentStep2" style="display:none;">
+      <div class="pix-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Escaneie o QR Code com seu banco</div>
+        <div class="pix-qr-wrap" id="pixQrCode"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--gold);margin:8px 0;">Valor: R$ 4,90</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Ou use o Pix Copia e Cola abaixo</div>
+        <div class="pix-key" id="pixPayloadText" style="font-size:10px;word-break:break-all;cursor:pointer;" onclick="copyPixPayload()" title="Clique para copiar">00020126580014br.gov.bcb.pix0136b7308164-fe17-42db-a189-469b2502f72b52040000530398654044.905802BR5917Lorranna Medeiros6009Sao Paulo62230519daqr16799943736385563040387</div>
+        <button onclick="copyPixPayload()" style="margin-top:8px;background:var(--green-dim);border:1px solid var(--green);border-radius:6px;color:var(--green);font-size:12px;padding:6px 14px;cursor:pointer;">📋 Copiar Pix Copia e Cola</button>
+      </div>
+      <div class="pix-instructions" style="margin-top:12px;">
+        Após o pagamento, envie o comprovante para confirmar seu acesso Premium.<br>
+        Seu acesso será liberado em até <strong>24 horas</strong>.
+      </div>
+      <button class="btn-modal-close" style="margin-top:16px;" onclick="closePaymentModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <div class="app-header">
+    <div class="app-logo">TROCA<span>⚽</span>FIGURINHAS</div>
+    <div class="header-right">
+      <div class="user-info">
+        <div class="user-email" id="headerEmail"></div>
+        <div id="headerPlan"></div>
+      </div>
+      <button id="btnBePremium" onclick="openPaymentModal()" style="display:none;background:var(--gold);border:none;border-radius:8px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:7px 14px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#ffe033'" onmouseout="this.style.background='var(--gold)'">⭐ SEJA PREMIUM</button>
+      <button id="btnAdminPanel" onclick="openAdmin()" style="display:none;background:transparent;border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;padding:6px 12px;cursor:pointer;">🛠️ ADMIN</button>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div id="limitBanner" style="display:none;" class="limit-banner">
+      <div class="limit-text">⚠️ Você atingiu o limite de <strong>3 comparações gratuitas</strong> desta semana.</div>
+      <button class="btn-upgrade" onclick="openPaymentModal()">⭐ ASSINAR R$ 4,90/mês</button>
+    </div>
+
+    <div class="section-label">Modo de comparação</div>
+    <div class="mode-grid">
+      <button class="mode-btn active" onclick="setMode(1)" id="mode1"><div class="mode-num">1</div><div class="mode-desc">Minhas faltantes × repetidas do outro colecionador</div></button>
+      <button class="mode-btn" onclick="setMode(2)" id="mode2"><div class="mode-num">2</div><div class="mode-desc">Comparação completa (faltantes + repetidas dos dois lados)</div></button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👤 Minhas figurinhas</div>
+      <div class="field-row">
+        <div class="field-group" id="myMissingGroup">
+          <div class="field-label">❌ Minhas Faltantes</div>
+          <textarea id="myMissing" placeholder="Cole suas faltantes aqui...&#10;Ex: BRA: 1, 2, 3&#10;MEX 🇲🇽: 4, 5"></textarea>
+        </div>
+        <div class="field-group" id="myRepeatedGroup">
+          <div class="field-label">🔁 Minhas Repetidas</div>
+          <textarea id="myRepeated" placeholder="Cole suas repetidas aqui...&#10;Ex: ARG: 7, 8&#10;CZE 🇨🇿: 3, 11"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div id="personsContainer"></div>
+    <button class="btn-add" id="btnAdd" onclick="addPerson()">+ Adicionar pessoa (máx. 5)</button>
+    <button class="btn-analyze" onclick="analyze()">⚡ ANALISAR TROCAS</button>
+
+    <div id="results">
+      <hr class="divider">
+      <div class="results-header">📊 RESULTADO</div>
+      <div id="resultsContent"></div>
+      <button class="btn-reset" onclick="resetResults()">← Nova análise</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// CONFIG
+const MP_RECURRING = 'https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=4353f6f567e14c5d9eebf731f8a68431';
+const MP_ONETIME = 'https://mpago.la/2AsFPjv';
+
+let mode = 1;
+let personCount = 0;
+let currentPersonIndex = 0;
+const MAX_PERSONS = 5;
+const PERSON_LABELS = ['A','B','C','D','E'];
+let currentUser = null;
+let isPremium = false;
+
+// ── FIREBASE AUTH FUNCTIONS ──────────────────────────────────────────────
+
+function switchTab(tab) {
+  const isEntrar = tab === 'entrar';
+  document.getElementById('formEntrar').style.display = isEntrar ? 'block' : 'none';
+  document.getElementById('formCadastrar').style.display = isEntrar ? 'none' : 'block';
+  document.getElementById('tabEntrar').style.background = isEntrar ? 'var(--green)' : 'transparent';
+  document.getElementById('tabEntrar').style.color = isEntrar ? '#000' : 'var(--muted)';
+  document.getElementById('tabCadastrar').style.background = isEntrar ? 'transparent' : 'var(--gold)';
+  document.getElementById('tabCadastrar').style.color = isEntrar ? 'var(--muted)' : '#000';
+}
+
+async function doGoogleLogin() {
+  try {
+    // Try popup first, fall back to redirect if it fails
+    await window.fbFunctions.signInWithPopup(window.fbAuth, window.fbGoogleProvider);
+  } catch(e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.message?.includes('Cross-Origin')) {
+      // Fall back to redirect
+      try {
+        await window.fbFunctions.signInWithRedirect(window.fbAuth, window.fbGoogleProvider);
+      } catch(e2) {
+        alert('Erro ao entrar com Google: ' + e2.message);
+      }
+    } else {
+      alert('Erro ao entrar com Google: ' + e.message);
+    }
+  }
+}
+
+async function doEmailLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!email || !pass) { errEl.textContent = 'Preencha e-mail e senha.'; errEl.style.display = 'block'; return; }
+  try {
+    await window.fbFunctions.signInWithEmailAndPassword(window.fbAuth, email, pass);
+  } catch(e) {
+    errEl.textContent = 'E-mail ou senha incorretos.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function doEmailSignup() {
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPassword').value;
+  const errEl = document.getElementById('signupError');
+  errEl.style.display = 'none';
+  if (!email || !pass) { errEl.textContent = 'Preencha e-mail e senha.'; errEl.style.display = 'block'; return; }
+  if (pass.length < 6) { errEl.textContent = 'A senha deve ter pelo menos 6 caracteres.'; errEl.style.display = 'block'; return; }
+  try {
+    await window.fbFunctions.createUserWithEmailAndPassword(window.fbAuth, email, pass);
+  } catch(e) {
+    if (e.code === 'auth/email-already-in-use') {
+      errEl.textContent = 'Este e-mail já está cadastrado.';
+    } else {
+      errEl.textContent = 'Erro ao criar conta. Tente novamente.';
+    }
+    errEl.style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await window.fbFunctions.signOut(window.fbAuth);
+  window.currentUser = null;
+  window.isPremium = false;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('plansScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────────────────
+const ADMIN_EMAILS = ['tengollner@gmail.com'];
+
+function isAdmin() {
+  return window.currentUser && ADMIN_EMAILS.includes(window.currentUser.email);
+}
+
+function openAdmin() {
+  if (!isAdmin()) return;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  document.getElementById('adminResults').innerHTML = '';
+  document.getElementById('adminListResults').innerHTML = '';
+  switchAdminTab('list');
+  adminListUsers();
+}
+
+function switchAdminTab(tab) {
+  const isList = tab === 'list';
+  document.getElementById('adminListView').style.display = isList ? 'block' : 'none';
+  document.getElementById('adminSearchView').style.display = isList ? 'none' : 'block';
+  document.getElementById('adminTabList').style.background = isList ? 'var(--green)' : 'transparent';
+  document.getElementById('adminTabList').style.color = isList ? '#000' : 'var(--muted)';
+  document.getElementById('adminTabSearch').style.background = isList ? 'transparent' : 'var(--green)';
+  document.getElementById('adminTabSearch').style.color = isList ? 'var(--muted)' : '#000';
+}
+
+// Render single user card (shared by list & search)
+function renderUserCard(uid, data) {
+  const premiumUntilDate = data.premiumUntil ? (data.premiumUntil.toDate ? data.premiumUntil.toDate() : new Date(data.premiumUntil)) : null;
+  const isActivePremium = data.isPremium && premiumUntilDate && premiumUntilDate > new Date();
+  const premiumDateStr = premiumUntilDate ? premiumUntilDate.toLocaleDateString('pt-BR') : 'Nenhuma';
+  const usage = data.weeklyUsage || {count: 0, start: Date.now()};
+  const createdAt = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : null;
+
+  return `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--green);letter-spacing:1px;word-break:break-all;">${data.email || '(sem e-mail)'}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:monospace;word-break:break-all;">${uid}</div>
+          ${createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">Cadastro: ${createdAt.toLocaleDateString('pt-BR')}</div>` : ''}
+        </div>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;padding:4px 10px;border-radius:20px;white-space:nowrap;${isActivePremium ? 'background:#1a1500;color:var(--gold);border:1px solid var(--gold);' : 'background:var(--green-dim);color:var(--green);border:1px solid var(--green);'}">${isActivePremium ? '⭐ PREMIUM' : 'GRATUITO'}</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:12px;">
+        <div>
+          <div style="color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-size:9px;margin-bottom:2px;">Premium até</div>
+          <div style="color:var(--text);">${premiumDateStr}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-size:9px;margin-bottom:2px;">Uso semanal</div>
+          <div style="color:var(--text);">${usage.count}x</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="adminGrantPremium('${uid}', 30)" style="flex:1;min-width:100px;background:var(--gold);border:none;border-radius:6px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">+30 DIAS</button>
+        <button onclick="adminGrantPremium('${uid}', 7)" style="flex:1;min-width:90px;background:transparent;border:1px solid var(--gold);border-radius:6px;color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">+7 DIAS</button>
+        <button onclick="adminRevokePremium('${uid}')" style="flex:1;min-width:90px;background:transparent;border:1px solid var(--red);border-radius:6px;color:var(--red);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">REVOGAR</button>
+        <button onclick="adminResetUsage('${uid}')" style="flex:1;min-width:90px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;padding:8px;cursor:pointer;">ZERAR USO</button>
+      </div>
+    </div>`;
+}
+
+async function adminListUsers() {
+  if (!isAdmin()) return;
+  const resultsEl = document.getElementById('adminListResults');
+  resultsEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Carregando usuários...</div>';
+
+  try {
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDocs(collection(window.fbDb, 'users'));
+
+    let users = [];
+    snap.forEach(docSnap => users.push({ uid: docSnap.id, data: docSnap.data() }));
+
+    // Stats
+    const now = Date.now();
+    const week = 7 * 24 * 60 * 60 * 1000;
+    let totalPremium = 0, totalFree = 0, totalNew = 0;
+    users.forEach(u => {
+      const pUntil = u.data.premiumUntil ? (u.data.premiumUntil.toDate ? u.data.premiumUntil.toDate() : new Date(u.data.premiumUntil)) : null;
+      const active = u.data.isPremium && pUntil && pUntil.getTime() > now;
+      if (active) totalPremium++; else totalFree++;
+      const created = u.data.createdAt ? (u.data.createdAt.toDate ? u.data.createdAt.toDate() : new Date(u.data.createdAt)) : null;
+      if (created && (now - created.getTime()) < week) totalNew++;
+    });
+    document.getElementById('statTotal').textContent = users.length;
+    document.getElementById('statPremium').textContent = totalPremium;
+    document.getElementById('statFree').textContent = totalFree;
+    document.getElementById('statNew7d').textContent = totalNew;
+
+    // Filter
+    const filter = document.getElementById('adminFilter').value;
+    users = users.filter(u => {
+      const pUntil = u.data.premiumUntil ? (u.data.premiumUntil.toDate ? u.data.premiumUntil.toDate() : new Date(u.data.premiumUntil)) : null;
+      const active = u.data.isPremium && pUntil && pUntil.getTime() > now;
+      const expired = u.data.premiumUntil && pUntil && pUntil.getTime() <= now;
+      if (filter === 'premium') return active;
+      if (filter === 'free') return !active && !expired;
+      if (filter === 'expired') return expired;
+      return true;
+    });
+
+    // Sort
+    const sort = document.getElementById('adminSort').value;
+    users.sort((a, b) => {
+      if (sort === 'email') return (a.data.email || '').localeCompare(b.data.email || '');
+      if (sort === 'usage') return (b.data.weeklyUsage?.count || 0) - (a.data.weeklyUsage?.count || 0);
+      const aDate = a.data.createdAt ? (a.data.createdAt.toDate ? a.data.createdAt.toDate().getTime() : new Date(a.data.createdAt).getTime()) : 0;
+      const bDate = b.data.createdAt ? (b.data.createdAt.toDate ? b.data.createdAt.toDate().getTime() : new Date(b.data.createdAt).getTime()) : 0;
+      return sort === 'oldest' ? aDate - bDate : bDate - aDate;
+    });
+
+    if (users.length === 0) {
+      resultsEl.innerHTML = '<div class="card" style="text-align:center;color:var(--muted);">Nenhum usuário encontrado com este filtro.</div>';
+      return;
+    }
+
+    let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;letter-spacing:1px;text-transform:uppercase;">${users.length} usuário(s) listado(s)</div>`;
+    users.forEach(u => html += renderUserCard(u.uid, u.data));
+    resultsEl.innerHTML = html;
+  } catch(e) {
+    console.error(e);
+    resultsEl.innerHTML = `<div class="card" style="color:var(--red);">Erro ao carregar usuários: ${e.message}</div>`;
+  }
+}
+
+function closeAdmin() {
+  document.getElementById('adminScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+}
+
+async function adminSearchUser() {
+  if (!isAdmin()) return;
+  const email = document.getElementById('adminSearchEmail').value.trim().toLowerCase();
+  if (!email) { alert('Digite um e-mail'); return; }
+  const resultsEl = document.getElementById('adminResults');
+  resultsEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Buscando...</div>';
+
+  try {
+    const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const q = query(collection(window.fbDb, 'users'), where('email', '==', email));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      resultsEl.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);">Nenhum usuário encontrado com o e-mail <strong style="color:var(--text);">${email}</strong></div>`;
+      return;
+    }
+
+    let html = '';
+    snap.forEach(docSnap => html += renderUserCard(docSnap.id, docSnap.data()));
+    resultsEl.innerHTML = html;
+  } catch(e) {
+    console.error(e);
+    resultsEl.innerHTML = `<div class="card" style="color:var(--red);">Erro: ${e.message}</div>`;
+  }
+}
+
+async function adminGrantPremium(uid, days) {
+  if (!isAdmin()) return;
+  if (!confirm(`Conceder ${days} dias de Premium a este usuário?`)) return;
+  try {
+    const { doc, getDoc, updateDoc } = window.fbFunctions;
+    const ref = doc(window.fbDb, 'users', uid);
+    const snap = await getDoc(ref);
+    const data = snap.data();
+    // If already premium, extend from current date; otherwise from now
+    const current = data.premiumUntil ? (data.premiumUntil.toDate ? data.premiumUntil.toDate() : new Date(data.premiumUntil)) : null;
+    const startDate = (current && current > new Date()) ? current : new Date();
+    const newDate = new Date(startDate.getTime() + days * 24 * 60 * 60 * 1000);
+    await updateDoc(ref, { isPremium: true, premiumUntil: newDate });
+    alert(`Premium concedido até ${newDate.toLocaleDateString('pt-BR')}`);
+    if (document.getElementById('adminListView').style.display !== 'none') adminListUsers();
+    else adminSearchUser();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+async function adminRevokePremium(uid) {
+  if (!isAdmin()) return;
+  if (!confirm('Revogar acesso Premium deste usuário?')) return;
+  try {
+    const { doc, updateDoc } = window.fbFunctions;
+    const ref = doc(window.fbDb, 'users', uid);
+    await updateDoc(ref, { isPremium: false, premiumUntil: null });
+    alert('Premium revogado.');
+    if (document.getElementById('adminListView').style.display !== 'none') adminListUsers();
+    else adminSearchUser();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+async function adminResetUsage(uid) {
+  if (!isAdmin()) return;
+  if (!confirm('Zerar contador de uso semanal deste usuário?')) return;
+  try {
+    const { doc, updateDoc } = window.fbFunctions;
+    const ref = doc(window.fbDb, 'users', uid);
+    await updateDoc(ref, { weeklyUsage: { count: 0, start: Date.now() } });
+    alert('Contador zerado.');
+    if (document.getElementById('adminListView').style.display !== 'none') adminListUsers();
+    else adminSearchUser();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+// Load user data from Firestore
+window.loadUserData = async function(user) {
+  try {
+    const { doc, getDoc, setDoc } = window.fbFunctions;
+    const ref = doc(window.fbDb, 'users', user.uid);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data();
+      // Check premium
+      if (data.premiumUntil && new Date(data.premiumUntil.toDate ? data.premiumUntil.toDate() : data.premiumUntil) > new Date()) {
+        window.isPremium = true;
+      } else {
+        window.isPremium = false;
+      }
+      // Store usage locally for speed
+      window.weeklyUsage = data.weeklyUsage || { count: 0, start: Date.now() };
+      // Reset if 7 days passed
+      if (Date.now() - window.weeklyUsage.start > 7 * 24 * 60 * 60 * 1000) {
+        window.weeklyUsage = { count: 0, start: Date.now() };
+      }
+    } else {
+      // New user — create document
+      window.isPremium = false;
+      window.weeklyUsage = { count: 0, start: Date.now() };
+      await setDoc(ref, {
+        email: user.email,
+        isPremium: false,
+        premiumUntil: null,
+        weeklyUsage: window.weeklyUsage,
+        createdAt: new Date()
+      });
+    }
+  } catch(e) {
+    console.error('Firestore error:', e);
+    window.isPremium = false;
+    window.weeklyUsage = { count: 0, start: Date.now() };
+  }
+}
+
+function chooseFree() {
+  document.getElementById('plansScreen').style.display = 'none';
+  startApp();
+}
+
+window.startApp = function() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('rulesScreen').style.display = 'none';
+  document.getElementById('plansScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+
+  // Header
+  document.getElementById('headerEmail').textContent = window.currentUser ? (window.currentUser.email || window.currentUser.displayName) : '';
+  document.getElementById('headerPlan').innerHTML = window.isPremium
+    ? '<span class="plan-pill premium">⭐ PREMIUM</span>'
+    : '<span class="plan-pill free">GRATUITO</span>';
+  document.getElementById('btnBePremium').style.display = window.isPremium ? 'none' : 'inline-block';
+  document.getElementById('btnAdminPanel').style.display = isAdmin() ? 'inline-block' : 'none';
+
+  // Limite diário
+  updateLimitBanner();
+
+  // Adiciona primeira pessoa
+  if (personCount === 0) addPerson();
+}
+
+// LIMITE SEMANAL — Firebase
+const WEEKLY_LIMIT = 1;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function canAnalyze() {
+  if (window.isPremium) return true;
+  const wu = window.weeklyUsage || { count: 0, start: Date.now() };
+  return wu.count < WEEKLY_LIMIT;
+}
+
+function getRemainingDays() {
+  const wu = window.weeklyUsage || { count: 0, start: Date.now() };
+  const elapsed = Date.now() - wu.start;
+  return Math.ceil((WEEK_MS - elapsed) / (24 * 60 * 60 * 1000));
+}
+
+async function incrementUsage() {
+  if (!window.weeklyUsage) window.weeklyUsage = { count: 0, start: Date.now() };
+  window.weeklyUsage.count++;
+  try {
+    const { doc, updateDoc } = window.fbFunctions;
+    const ref = doc(window.fbDb, 'users', window.currentUser.uid);
+    await updateDoc(ref, { weeklyUsage: window.weeklyUsage });
+  } catch(e) { console.error('Usage update error:', e); }
+}
+
+function updateLimitBanner() {
+  const banner = document.getElementById('limitBanner');
+  if (!window.isPremium && !canAnalyze()) {
+    const days = getRemainingDays();
+    banner.querySelector('.limit-text').innerHTML =
+      `⚠️ Você usou sua <strong>comparação gratuita</strong> desta semana. Renova em <strong>${days} dia${days > 1 ? 's' : ''}</strong> ou assine o Premium.`;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// MODAL PAGAMENTO
+function openPaymentModal() {
+  document.getElementById('paymentModal').classList.add('open');
+  document.getElementById('paymentStep1').style.display = 'block';
+  document.getElementById('paymentStep2').style.display = 'none';
+}
+
+function openPaymentThenSignup() {
+  // Called from plans screen for new premium users
+  openPaymentModal();
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').classList.remove('open');
+}
+
+const PIX_PAYLOAD = '00020126580014br.gov.bcb.pix0136b7308164-fe17-42db-a189-469b2502f72b52040000530398654044.905802BR5917Lorranna Medeiros6009Sao Paulo62230519daqr16799943736385563040387';
+
+function processPayment() {
+  const subtype = document.querySelector('input[name="subtype"]:checked').value;
+  const paymethod = document.querySelector('input[name="paymethod"]:checked').value;
+
+  if (paymethod === 'pix') {
+    document.getElementById('paymentStep1').style.display = 'none';
+    document.getElementById('paymentStep2').style.display = 'block';
+    // Generate QR Code
+    const qrContainer = document.getElementById('pixQrCode');
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, {
+      text: PIX_PAYLOAD,
+      width: 200,
+      height: 200,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    return;
+  }
+
+  // Mercado Pago
+  const url = subtype === 'recurring' ? MP_RECURRING : MP_ONETIME;
+  window.open(url, '_blank');
+  closePaymentModal();
+}
+
+function copyPix() {
+  navigator.clipboard.writeText(PIX_KEY).then(() => alert('Chave PIX copiada!')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = PIX_KEY;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Chave PIX copiada!');
+  });
+}
+
+function copyPixPayload() {
+  navigator.clipboard.writeText(PIX_PAYLOAD).then(() => alert('Pix Copia e Cola copiado!')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = PIX_PAYLOAD;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Pix Copia e Cola copiado!');
+  });
+}
+
+// MODO
+function setMode(m) {
+  mode = m;
+  for (let i = 1; i <= 2; i++) {
+    const el = document.getElementById('mode' + i);
+    if (el) el.classList.toggle('active', i === m);
+  }
+  document.getElementById('myRepeatedGroup').style.display = m === 1 ? 'none' : 'flex';
+  document.querySelectorAll('.person-missing-group').forEach(el => {
+    el.style.display = m === 1 ? 'none' : 'flex';
+  });
+}
+
+// PESSOAS
+function addPerson() {
+  if (personCount >= MAX_PERSONS) return;
+  const label = PERSON_LABELS[personCount];
+  const idx = currentPersonIndex++;
+  personCount++;
+
+  const div = document.createElement('div');
+  div.className = 'person-card';
+  div.id = 'person_' + idx;
+  div.innerHTML = `
+    <div class="person-header">
+      <div class="person-badge">${label}</div>
+      <input type="text" placeholder="Nome (opcional)" id="personName_${idx}" style="max-width:200px;">
+      <button onclick="removePerson(${idx})" style="margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field-group person-repeated-group">
+        <div class="field-label">🔁 Repetidas de ${label}</div>
+        <textarea id="personRepeated_${idx}" placeholder="Cole as repetidas desta pessoa..."></textarea>
+      </div>
+      <div class="field-group person-missing-group" style="display:${(mode===1||mode===3)?'none':'flex'}">
+        <div class="field-label">❌ Faltantes de ${label}</div>
+        <textarea id="personMissing_${idx}" placeholder="Cole as faltantes desta pessoa..."></textarea>
+      </div>
+    </div>`;
+  document.getElementById('personsContainer').appendChild(div);
+  if (personCount >= MAX_PERSONS) document.getElementById('btnAdd').style.display = 'none';
+}
+
+function removePerson(idx) {
+  const el = document.getElementById('person_' + idx);
+  if (el) el.remove();
+  personCount--;
+  document.getElementById('btnAdd').style.display = 'block';
+}
+
+// PARSER
+function parseStickers(text) {
+  if (!text || !text.trim()) return new Set();
+  const result = new Set();
+  let clean = text.replace(/\*/g, '').replace(/_/g, '');
+  clean = clean.replace(/[^\x00-\x7F\n,:0-9a-zA-Z \t]/g, ' ');
+  const lines = clean.split('\n');
+  let currentCode = null;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (/^(faltante|repetida|faltando|repetindo|lista|copa|figurinha|pg\.|p\.)/i.test(line) && !line.includes(':')) continue;
+    const colonMatch = line.match(/^([A-Z]{2,5})\s*:\s*([\d,\s]+)$/i);
+    if (colonMatch) {
+      currentCode = colonMatch[1].toUpperCase();
+      colonMatch[2].split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n)).forEach(n => result.add(currentCode + n));
+      continue;
+    }
+    const inlineMatches = [...line.matchAll(/\b([A-Z]{2,5})\s*(\d+)\b/gi)];
+    if (inlineMatches.length > 0) {
+      inlineMatches.forEach(m => { result.add(m[1].toUpperCase() + parseInt(m[2])); currentCode = m[1].toUpperCase(); });
+      continue;
+    }
+    if (currentCode && /^[\d,\s]+$/.test(line)) {
+      line.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n)).forEach(n => result.add(currentCode + n));
+    }
+  }
+  return result;
+}
+
+function parseMixed(text) {
+  if (!text || !text.trim()) return { missing: new Set(), repeated: new Set() };
+  const lines = text.split('\n');
+  let section = null;
+  const missingLines = [], repeatedLines = [];
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if (/faltante|faltando|missing/.test(lower)) { section = 'missing'; continue; }
+    if (/repetida|repetindo|repeated/.test(lower)) { section = 'repeated'; continue; }
+    if (section === 'missing') missingLines.push(line);
+    else if (section === 'repeated') repeatedLines.push(line);
+  }
+  return { missing: parseStickers(missingLines.join('\n')), repeated: parseStickers(repeatedLines.join('\n')) };
+}
+
+function setToSorted(s) {
+  return [...s].sort((a, b) => {
+    const cA = a.match(/^[A-Z]+/)[0], cB = b.match(/^[A-Z]+/)[0];
+    const nA = parseInt(a.match(/\d+$/)[0]), nB = parseInt(b.match(/\d+$/)[0]);
+    return cA !== cB ? cA.localeCompare(cB) : nA - nB;
+  });
+}
+
+function intersection(a, b) {
+  const r = new Set();
+  for (const x of a) if (b.has(x)) r.add(x);
+  return r;
+}
+
+function formatTag(s, cls) { return `<span class="sticker-tag ${cls}">${s}</span>`; }
+
+// ANALISAR
+async function analyze() {
+  if (!canAnalyze()) {
+    openPaymentModal();
+    return;
+  }
+  await incrementUsage();
+  updateLimitBanner();
+
+  let myMissing, myRepeated;
+  if (mode === 1) {
+    const t = document.getElementById('myMissing').value;
+    const mx = parseMixed(t);
+    myMissing = mx.missing.size > 0 ? mx.missing : parseStickers(t);
+    myRepeated = new Set();
+  } else {
+    const tM = document.getElementById('myMissing').value;
+    const tR = document.getElementById('myRepeated').value;
+    const mxM = parseMixed(tM), mxR = parseMixed(tR);
+    myMissing = mxM.missing.size > 0 ? mxM.missing : parseStickers(tM);
+    myRepeated = mxR.repeated.size > 0 ? mxR.repeated : parseStickers(tR);
+  }
+
+  const persons = [];
+  document.querySelectorAll('.person-card').forEach((el, i) => {
+    const idx = el.id.replace('person_', '');
+    const repEl = document.getElementById('personRepeated_' + idx);
+    const misEl = document.getElementById('personMissing_' + idx);
+    const nameEl = document.getElementById('personName_' + idx);
+    if (!repEl) return;
+    const label = PERSON_LABELS[i] || '?';
+    const name = (nameEl && nameEl.value.trim()) || ('Pessoa ' + label);
+    let theirRepeated, theirMissing;
+    if (mode === 1) {
+      const t = repEl.value;
+      const mx = parseMixed(t);
+      theirRepeated = mx.repeated.size > 0 ? mx.repeated : parseStickers(t);
+      theirMissing = new Set();
+    } else {
+      const tR = repEl.value, tM = misEl ? misEl.value : '';
+      const mxR = parseMixed(tR), mxM = parseMixed(tM);
+      theirRepeated = mxR.repeated.size > 0 ? mxR.repeated : parseStickers(tR);
+      theirMissing = mxM.missing.size > 0 ? mxM.missing : parseStickers(tM);
+    }
+    persons.push({ name, theirRepeated, theirMissing });
+  });
+
+  if (persons.length === 0) { alert('Adicione ao menos uma pessoa!'); return; }
+
+  let html = '';
+  for (const person of persons) {
+    const iCanGet = intersection(person.theirRepeated, myMissing);
+    const iCanGive = mode === 2 ? intersection(myRepeated, person.theirMissing) : new Set();
+    const getArr = setToSorted(iCanGet);
+    const giveArr = setToSorted(iCanGive);
+    const n = Math.min(getArr.length, giveArr.length > 0 ? giveArr.length : getArr.length);
+
+    let pairHtml = `<div class="result-pair"><div class="pair-header"><div class="pair-title">🤝 Você × ${person.name}</div>`;
+
+    if (mode === 1 || mode === 3) {
+      pairHtml += `<div class="pair-count">${getArr.length} disponíveis</div></div>`;
+      if (getArr.length === 0) {
+        pairHtml += `<div class="no-trade">Nenhuma figurinha compatível encontrada.</div>`;
+      } else {
+        pairHtml += `<div class="trade-side-label" style="margin-bottom:8px;">✅ ${person.name} tem repetidas que você precisa (${getArr.length}):</div><div class="stickers-wrap">`;
+        getArr.forEach(s => pairHtml += formatTag(s, 'get'));
+        pairHtml += `</div>`;
+      }
+    } else {
+      const tradeN = Math.min(getArr.length, giveArr.length);
+      pairHtml += `<div class="pair-count">${tradeN} × ${tradeN}</div></div>`;
+      if (tradeN === 0) {
+        pairHtml += `<div class="no-trade">Nenhuma troca equilibrada possível.</div>`;
+      } else {
+        pairHtml += `<div class="trade-row">
+          <div class="trade-side"><div class="trade-side-label">🔴 Você dá (${tradeN})</div><div class="stickers-wrap">`;
+        giveArr.slice(0, tradeN).forEach(s => pairHtml += formatTag(s, 'give'));
+        pairHtml += `</div></div><div class="trade-arrow">⇄</div>
+          <div class="trade-side"><div class="trade-side-label">🟢 Você recebe (${tradeN})</div><div class="stickers-wrap">`;
+        getArr.slice(0, tradeN).forEach(s => pairHtml += formatTag(s, 'get'));
+        pairHtml += `</div></div></div>`;
+        const gE = giveArr.slice(tradeN), gR = getArr.slice(tradeN);
+        if (gE.length > 0 || gR.length > 0) {
+          pairHtml += `<div class="tag-extras">`;
+          if (gE.length > 0) { pairHtml += `<div class="extras-label">📦 Suas extras disponíveis (${gE.length})</div><div class="stickers-wrap">`; gE.forEach(s => pairHtml += formatTag(s, '')); pairHtml += `</div>`; }
+          if (gR.length > 0) { pairHtml += `<div class="extras-label" style="margin-top:8px;">📦 Extras de ${person.name} que você precisa (${gR.length})</div><div class="stickers-wrap">`; gR.forEach(s => pairHtml += formatTag(s, 'get')); pairHtml += `</div>`; }
+          pairHtml += `</div>`;
+        }
+      }
+    }
+
+    const copyText = buildCopyText(person.name, giveArr, getArr, mode);
+    const escaped = copyText.replace(/`/g, '\\`');
+    pairHtml += `<button class="btn-copy" onclick="doCopy(\`${escaped}\`)">📋 Copiar proposta para ${person.name}</button></div>`;
+    html += pairHtml;
+  }
+
+  document.getElementById('resultsContent').innerHTML = html;
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function buildCopyText(name, giveArr, getArr, mode) {
+  if (mode === 1) {
+    if (getArr.length === 0) return `${name}, analisei nossas listas mas não encontrei trocas possíveis no momento. 😕`;
+    return `${name}, vi aqui que você tem repetidas que eu preciso!\n\nPreciso das (${getArr.length}):\n${getArr.join(', ')}\n\nMe manda sua lista de faltantes pra ver o que posso te dar em troca! 🤝⚽`;
+  }
+  const n = Math.min(giveArr.length, getArr.length);
+  if (n === 0) return `${name}, analisei nossas listas mas não encontrei trocas possíveis no momento. 😕`;
+  return `${name}, analisei nossas listas e encontrei umas trocas boas!\n\nEu te dou (${n}):\n${giveArr.slice(0, n).join(', ')}\n\nVocê me dá (${n}):\n${getArr.slice(0, n).join(', ')}\n\n${n} por ${n}! Fechado? 🤝⚽`;
+}
+
+function doCopy(text) {
+  navigator.clipboard.writeText(text).then(() => alert('Copiado!')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Copiado!');
+  });
+}
+
+function resetResults() {
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('resultsContent').innerHTML = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
