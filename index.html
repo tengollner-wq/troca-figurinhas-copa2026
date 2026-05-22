@@ -290,6 +290,127 @@
   .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
   .tag-extras { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
   .extras-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+
+  /* LOGIN 3-COLUMN LAYOUT */
+  .login-page {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    background: radial-gradient(ellipse at 50% 0%, #0d2e0d 0%, var(--bg) 70%);
+  }
+  .login-page-header {
+    text-align: center;
+    padding: 32px 20px 16px;
+  }
+  .login-columns {
+    display: grid;
+    grid-template-columns: 1fr 420px 1fr;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    width: 100%;
+    align-items: start;
+  }
+  @media(max-width: 900px) {
+    .login-columns { grid-template-columns: 1fr; }
+  }
+  .login-side-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .login-side-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--green);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .how-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .how-num {
+    background: var(--green-dark);
+    color: var(--green);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .how-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .support-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .support-input:focus { border-color: var(--green); }
+  .support-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .support-textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.2s;
+  }
+  .support-textarea:focus { border-color: var(--green); }
+  .btn-support {
+    width: 100%;
+    padding: 12px;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-support:hover { background: #00e676; }
+
 </style>
 </head>
 <body>
@@ -302,48 +423,128 @@
 
 
 <!-- LOGIN SCREEN -->
-<div id="loginScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;">
-  <div class="login-box">
+<div id="loginScreen" class="login-page">
+
+  <!-- Header -->
+  <div class="login-page-header">
     <div class="login-ball">⚽</div>
     <div class="login-logo">TROCA<span>⚽</span>FIGURINHAS</div>
     <div class="login-sub">Copa do Mundo 2026</div>
+  </div>
 
-    <div style="display:flex;gap:0;margin-bottom:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-      <button id="tabEntrar" onclick="switchTab('entrar')" style="flex:1;padding:12px;background:var(--green);color:#000;border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">ENTRAR</button>
-      <button id="tabCadastrar" onclick="switchTab('cadastrar')" style="flex:1;padding:12px;background:transparent;color:var(--muted);border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">CADASTRAR</button>
+  <!-- 3 colunas -->
+  <div class="login-columns">
+
+    <!-- COLUNA ESQUERDA: Como funciona -->
+    <div class="login-side-card">
+      <div class="login-side-title">📖 Como funciona</div>
+
+      <div class="how-item">
+        <div class="how-num">1</div>
+        <div class="how-text"><strong style="color:var(--green);">Cadastre-se gratuitamente</strong> e acesse o app com Google ou e-mail.</div>
+      </div>
+      <div class="how-item">
+        <div class="how-num">2</div>
+        <div class="how-text"><strong style="color:var(--green);">Cole suas listas</strong> de figurinhas faltantes e repetidas nos campos indicados.</div>
+      </div>
+      <div class="how-item">
+        <div class="how-num">3</div>
+        <div class="how-text"><strong style="color:var(--green);">Cole a lista de outro colecionador</strong> e o sistema compara automaticamente.</div>
+      </div>
+      <div class="how-item">
+        <div class="how-num">4</div>
+        <div class="how-text"><strong style="color:var(--green);">Receba a proposta de troca</strong> equilibrada e a mensagem pronta para o WhatsApp.</div>
+      </div>
+      <div class="how-item">
+        <div class="how-num">5</div>
+        <div class="how-text"><strong style="color:var(--green);">Analise até 5 pessoas</strong> simultaneamente e maximize suas trocas!</div>
+      </div>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Planos</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--green);letter-spacing:1px;">🆓 GRATUITO</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">1 comparação por semana</div>
+          </div>
+          <div style="background:#1a1500;border:1px solid var(--gold);border-radius:8px;padding:12px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--gold);letter-spacing:1px;">⭐ PREMIUM — R$ 4,90/mês</div>
+            <div style="font-size:12px;color:#8a7500;margin-top:2px;">Comparações ilimitadas</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <button onclick="doGoogleLogin()" style="width:100%;padding:14px;background:#fff;color:#333;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
-      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Continuar com Google
-    </button>
+    <!-- COLUNA CENTRAL: Login -->
+    <div class="login-box" style="max-width:100%;">
+      <div style="display:flex;gap:0;margin-bottom:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <button id="tabEntrar" onclick="switchTab('entrar')" style="flex:1;padding:12px;background:var(--green);color:#000;border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">ENTRAR</button>
+        <button id="tabCadastrar" onclick="switchTab('cadastrar')" style="flex:1;padding:12px;background:transparent;color:var(--muted);border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">CADASTRAR</button>
+      </div>
 
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-      <span style="font-size:12px;color:var(--muted);">ou</span>
-      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <button onclick="doGoogleLogin()" style="width:100%;padding:14px;background:#fff;color:#333;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continuar com Google
+      </button>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:12px;color:var(--muted);">ou</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <div id="formEntrar" class="login-card" style="margin-bottom:12px;">
+        <input type="email" id="loginEmail" placeholder="Seu e-mail" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:10px;box-sizing:border-box;">
+        <input type="password" id="loginPassword" placeholder="Senha" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;box-sizing:border-box;">
+        <div id="loginError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none;"></div>
+        <button class="btn-login" onclick="doEmailLogin()">🔐 ENTRAR</button>
+      </div>
+
+      <div id="formCadastrar" class="login-card" style="margin-bottom:12px;display:none;">
+        <input type="email" id="signupEmail" placeholder="Seu e-mail" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:10px;box-sizing:border-box;">
+        <input type="password" id="signupPassword" placeholder="Senha (mín. 6 caracteres)" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;box-sizing:border-box;">
+        <div id="signupError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none;"></div>
+        <button class="btn-login" style="background:var(--gold);color:#000;" onclick="doEmailSignup()">✨ CRIAR CONTA</button>
+      </div>
+
+      <div class="login-features">
+        <div class="login-feature"><span class="login-feature-icon">🆓</span>1 comparação<br>por semana grátis</div>
+        <div class="login-feature"><span class="login-feature-icon">👥</span>Até 5 pessoas<br>por análise</div>
+        <div class="login-feature"><span class="login-feature-icon">⭐</span>Premium<br>R$ 4,90/mês</div>
+        <div class="login-feature"><span class="login-feature-icon">📋</span>Mensagem<br>pronta p/ WhatsApp</div>
+      </div>
     </div>
 
-    <div id="formEntrar" class="login-card" style="margin-bottom:12px;">
-      <input type="email" id="loginEmail" placeholder="Seu e-mail" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:10px;box-sizing:border-box;">
-      <input type="password" id="loginPassword" placeholder="Senha" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;box-sizing:border-box;">
-      <div id="loginError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none;"></div>
-      <button class="btn-login" onclick="doEmailLogin()">🔐 ENTRAR</button>
+    <!-- COLUNA DIREITA: Suporte -->
+    <div class="login-side-card">
+      <div class="login-side-title">🎧 Suporte</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Dúvidas, sugestões ou solicitação de cancelamento? Preencha o formulário abaixo e retornaremos em breve.</p>
+
+      <div id="supportForm">
+        <input type="text" id="supportName" class="support-input" placeholder="Seu nome">
+        <input type="email" id="supportEmail" class="support-input" placeholder="Seu e-mail">
+        <select id="supportType" class="support-select">
+          <option value="">Selecione o assunto</option>
+          <option value="duvida">Dúvida sobre o app</option>
+          <option value="pagamento">Problema com pagamento</option>
+          <option value="cancelamento">Cancelamento de assinatura</option>
+          <option value="bug">Reportar um erro</option>
+          <option value="sugestao">Sugestão de melhoria</option>
+          <option value="outro">Outro</option>
+        </select>
+        <textarea id="supportMessage" class="support-textarea" placeholder="Descreva sua solicitação..."></textarea>
+        <div id="supportError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none;"></div>
+        <button class="btn-support" onclick="sendSupport()">📨 ENVIAR MENSAGEM</button>
+      </div>
+
+      <div id="supportSuccess" style="display:none;background:var(--green-dim);border:1px solid var(--green);border-radius:10px;padding:20px;text-align:center;">
+        <div style="font-size:32px;margin-bottom:8px;">✅</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--green);letter-spacing:2px;margin-bottom:6px;">MENSAGEM ENVIADA!</div>
+        <div style="font-size:13px;color:var(--muted);">Retornaremos para o seu e-mail em breve.</div>
+        <button onclick="resetSupport()" style="margin-top:14px;background:transparent;border:1px solid var(--green);border-radius:8px;color:var(--green);font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 14px;cursor:pointer;">Nova mensagem</button>
+      </div>
     </div>
 
-    <div id="formCadastrar" class="login-card" style="margin-bottom:12px;display:none;">
-      <input type="email" id="signupEmail" placeholder="Seu e-mail" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:10px;box-sizing:border-box;">
-      <input type="password" id="signupPassword" placeholder="Senha (mín. 6 caracteres)" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;box-sizing:border-box;">
-      <div id="signupError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none;"></div>
-      <button class="btn-login" style="background:var(--gold);color:#000;" onclick="doEmailSignup()">✨ CRIAR CONTA</button>
-    </div>
-
-    <div class="login-features">
-      <div class="login-feature"><span class="login-feature-icon">🆓</span>1 comparação<br>por semana grátis</div>
-      <div class="login-feature"><span class="login-feature-icon">👥</span>Até 5 pessoas<br>por análise</div>
-      <div class="login-feature"><span class="login-feature-icon">⭐</span>Premium<br>R$ 4,90/mês</div>
-      <div class="login-feature"><span class="login-feature-icon">📋</span>Mensagem<br>pronta p/ WhatsApp</div>
-    </div>
   </div>
 </div>
 
@@ -625,6 +826,51 @@ function switchTab(tab) {
   document.getElementById('tabEntrar').style.color = isEntrar ? '#000' : 'var(--muted)';
   document.getElementById('tabCadastrar').style.background = isEntrar ? 'transparent' : 'var(--gold)';
   document.getElementById('tabCadastrar').style.color = isEntrar ? 'var(--muted)' : '#000';
+}
+
+async function sendSupport() {
+  const name = document.getElementById('supportName').value.trim();
+  const email = document.getElementById('supportEmail').value.trim();
+  const type = document.getElementById('supportType').value;
+  const message = document.getElementById('supportMessage').value.trim();
+  const errEl = document.getElementById('supportError');
+  errEl.style.display = 'none';
+
+  if (!name || !email || !type || !message) {
+    errEl.textContent = 'Preencha todos os campos.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'E-mail inválido.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Save to Firestore
+  try {
+    const { doc, setDoc } = window.fbFunctions;
+    const ref = doc(window.fbDb, 'support', Date.now().toString());
+    await setDoc(ref, {
+      name, email, type, message,
+      createdAt: new Date(),
+      status: 'pending'
+    });
+    document.getElementById('supportForm').style.display = 'none';
+    document.getElementById('supportSuccess').style.display = 'block';
+  } catch(e) {
+    errEl.textContent = 'Erro ao enviar. Tente novamente.';
+    errEl.style.display = 'block';
+  }
+}
+
+function resetSupport() {
+  document.getElementById('supportName').value = '';
+  document.getElementById('supportEmail').value = '';
+  document.getElementById('supportType').value = '';
+  document.getElementById('supportMessage').value = '';
+  document.getElementById('supportForm').style.display = 'block';
+  document.getElementById('supportSuccess').style.display = 'none';
 }
 
 async function doGoogleLogin() {
